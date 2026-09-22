@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Marquee — Ticket Booking Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #12141c;
+    --surface: #1b1e2b;
+    --surface-2: #232739;
+    --line: #2c3044;
+    --gold: #e8b54d;
+    --gold-dim: #a9863c;
+    --red: #c1443a;
+    --red-dim: #7d2e28;
+    --green: #6fae7c;
+    --text: #edeae2;
+    --muted: #8c90a6;
+    --radius: 10px;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  :root:not([data-theme="light"]) { color-scheme: dark; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #f4f2ec;
+      --surface: #ffffff;
+      --surface-2: #eeece3;
+      --line: #ddd8c9;
+      --text: #201d17;
+      --muted: #6b6656;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f4f2ec;
+    --surface: #ffffff;
+    --surface-2: #eeece3;
+    --line: #ddd8c9;
+    --text: #201d17;
+    --muted: #6b6656;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .display { font-family: 'Bebas Neue', 'Inter', sans-serif; letter-spacing: 0.02em; }
+
+  .app {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ---- Sidebar ---- */
+  .rail {
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    padding: 22px 14px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+  .brand {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 30px;
+    color: var(--gold);
+    padding: 0 8px 22px 8px;
+    line-height: 1;
+  }
+  .brand span { color: var(--text); }
+  nav { display: flex; flex-direction: column; gap: 4px; }
+  .nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font: inherit;
+    font-size: 14.5px;
+    font-weight: 500;
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .nav-btn:hover { background: var(--surface-2); color: var(--text); }
+  .nav-btn.active { background: var(--surface-2); color: var(--gold); }
+  .nav-icon { width: 18px; text-align: center; }
+  .rail-foot { margin-top: auto; padding: 10px 12px; font-size: 12px; color: var(--muted); }
+  .theme-toggle {
+    margin-top: 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  /* ---- Main ---- */
+  main {
+    flex: 1;
+    min-width: 0;
+    padding: 30px 36px 60px;
+  }
+  .page { display: none; }
+  .page.active { display: block; animation: rise .25s ease; }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .page.active { animation: none; } }
+
+  h1.page-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 34px;
+    margin: 0 0 4px;
+    color: var(--text);
+  }
+  .page-sub { color: var(--muted); font-size: 14px; margin: 0 0 26px; }
+
+  /* ---- Stat cards ---- */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 30px; }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+  }
+  .stat .num { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--gold); line-height: 1; }
+  .stat .lbl { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+
+  .grid-2 { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } .stats { grid-template-columns: repeat(2,1fr); } }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .panel h2 { font-size: 15px; margin: 0 0 14px; font-weight: 600; }
+  .panel h2 .muted { color: var(--muted); font-weight: 400; }
+
+  .row-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 13.5px;
+  }
+  .row-item:last-child { border-bottom: none; }
+  .row-item .mv { color: var(--muted); font-size: 12px; }
+
+  /* ---- Forms ---- */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+  .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+  .field.full { grid-column: 1 / -1; }
+  label { font-size: 12.5px; color: var(--muted); }
+  input, select, textarea {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: 7px;
+    padding: 9px 10px;
+    font: inherit;
+    font-size: 13.5px;
+  }
+  input:focus, select:focus, textarea:focus, button:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 1px;
+  }
+  textarea { resize: vertical; min-height: 60px; }
+
+  button.btn {
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    border-radius: 7px;
+    padding: 10px 16px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: filter .15s, transform .05s;
+  }
+  button.btn:active { transform: translateY(1px); }
+  .btn-gold { background: var(--gold); color: #1a1508; }
+  .btn-gold:hover { filter: brightness(1.08); }
+  .btn-ghost { background: transparent; border-color: var(--line); color: var(--text); }
+  .btn-ghost:hover { background: var(--surface-2); }
+  .btn-red { background: var(--red); color: #fff; }
+  .btn-red:hover { filter: brightness(1.1); }
+  .btn-sm { padding: 6px 10px; font-size: 12px; }
+
+  /* ---- Movie cards ---- */
+  .movie-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px,1fr)); gap: 14px; margin-top: 18px; }
+  .movie-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .poster {
+    height: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px;
+    color: rgba(255,255,255,.92);
+  }
+  .movie-body { padding: 12px 14px 14px; }
+  .movie-title { font-weight: 600; font-size: 14.5px; margin-bottom: 3px; }
+  .movie-meta { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  .movie-actions { display: flex; gap: 8px; }
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: var(--surface-2);
+    color: var(--muted);
+    border: 1px solid var(--line);
+  }
+
+  /* ---- Showtime list ---- */
+  .show-list { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+  .show-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .show-info { display: flex; gap: 14px; align-items: center; }
+  .show-swatch { width: 6px; align-self: stretch; border-radius: 4px; min-height: 34px; }
+  .show-title { font-weight: 600; font-size: 14px; }
+  .show-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .occ-bar { width: 110px; height: 6px; border-radius: 6px; background: var(--surface-2); overflow: hidden; }
+  .occ-fill { height: 100%; background: var(--gold); }
+
+  /* ---- Booking flow ---- */
+  .book-wrap { display: grid; grid-template-columns: 320px 1fr; gap: 22px; }
+  @media (max-width: 900px) { .book-wrap { grid-template-columns: 1fr; } }
+  .showtime-pick {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 480px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .st-opt {
+    text-align: left;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    cursor: pointer;
+    color: var(--text);
+    font: inherit;
+  }
+  .st-opt:hover { border-color: var(--gold-dim); }
+  .st-opt.sel { border-color: var(--gold); background: rgba(232,181,77,0.1); }
+  .st-opt .t1 { font-weight: 600; font-size: 13.5px; }
+  .st-opt .t2 { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+
+  .screen {
+    width: 70%;
+    margin: 0 auto 30px;
+    height: 10px;
+    border-radius: 50%;
+    background: linear-gradient(180deg, var(--gold), transparent);
+    opacity: .5;
+    box-shadow: 0 10px 24px -6px var(--gold);
+  }
+  .seat-map { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .seat-row { display: flex; gap: 6px; align-items: center; }
+  .row-label { width: 18px; font-size: 11px; color: var(--muted); text-align: right; margin-right: 4px; }
+  .seat {
+    width: 26px; height: 22px;
+    border-radius: 5px 5px 3px 3px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    cursor: pointer;
+    font-size: 9px;
+    color: var(--muted);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .seat.taken { background: var(--red-dim); border-color: var(--red-dim); cursor: not-allowed; color: rgba(255,255,255,.5); }
+  .seat.sel { background: var(--gold); border-color: var(--gold); color: #1a1508; font-weight: 700; }
+  .legend { display: flex; gap: 18px; justify-content: center; margin-top: 18px; font-size: 12px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .lg-box { width: 14px; height: 12px; border-radius: 3px; display: inline-block; }
+
+  .book-summary {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-top: 24px;
+  }
+  .summary-row { display: flex; justify-content: space-between; font-size: 13.5px; padding: 5px 0; }
+  .summary-total { font-weight: 700; font-size: 16px; color: var(--gold); border-top: 1px solid var(--line); margin-top: 6px; padding-top: 10px; }
+
+  /* ---- Bookings table ---- */
+  table { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 13.5px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: none; }
+  tr:last-child td { border-bottom: none; }
+  .status-pill { font-size: 11px; padding: 3px 9px; border-radius: 20px; }
+  .status-confirmed { background: rgba(111,174,124,.15); color: var(--green); }
+  .status-cancelled { background: rgba(193,68,58,.15); color: var(--red); }
+  .table-wrap { overflow-x: auto; }
+
+  .empty { text-align: center; padding: 50px 20px; color: var(--muted); }
+  .empty .em-icon { font-size: 30px; margin-bottom: 10px; }
+
+  .toolbar { display: flex; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+  .search { min-width: 200px; }
+
+  .toast {
+    position: fixed;
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface-2);
+    border: 1px solid var(--gold);
+    color: var(--text);
+    padding: 11px 20px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s, transform .2s;
+    z-index: 50;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 720px) {
+    .app { flex-direction: column; }
+    .rail { width: 100%; height: auto; position: relative; flex-direction: row; overflow-x: auto; padding: 12px; }
+    .brand { display: none; }
+    nav { flex-direction: row; }
+    .rail-foot { display: none; }
+    main { padding: 20px; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="brand">MARQUEE<span>·MGR</span></div>
+    <nav id="nav">
+      <button class="nav-btn active" data-page="dashboard"><span class="nav-icon">◆</span>Dashboard</button>
+      <button class="nav-btn" data-page="movies"><span class="nav-icon">▤</span>Movies</button>
+      <button class="nav-btn" data-page="showtimes"><span class="nav-icon">▥</span>Showtimes</button>
+      <button class="nav-btn" data-page="book"><span class="nav-icon">▦</span>Book Tickets</button>
+      <button class="nav-btn" data-page="bookings"><span class="nav-icon">▧</span>Bookings</button>
+    </nav>
+    <div class="rail-foot">
+      Data is stored in this browser only.
+      <button class="theme-toggle" id="themeToggle" type="button">Toggle theme</button>
+    </div>
+  </aside>
+
+  <main>
+    <!-- DASHBOARD -->
+    <section class="page active" id="page-dashboard">
+      <h1 class="page-title">Dashboard</h1>
+      <p class="page-sub">Tonight's numbers at a glance.</p>
+      <div class="stats">
+        <div class="stat"><div class="num" id="statMovies">0</div><div class="lbl">Movies listed</div></div>
+        <div class="stat"><div class="num" id="statShowtimes">0</div><div class="lbl">Showtimes scheduled</div></div>
+        <div class="stat"><div class="num" id="statSeats">0</div><div class="lbl">Seats booked</div></div>
+        <div class="stat"><div class="num" id="statRevenue">$0</div><div class="lbl">Revenue (confirmed)</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="panel">
+          <h2>Upcoming showtimes</h2>
+          <div id="dashShowtimes"></div>
+        </div>
+        <div class="panel">
+          <h2>Recent bookings</h2>
+          <div id="dashBookings"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MOVIES -->
+    <section class="page" id="page-movies">
+      <h1 class="page-title">Movies</h1>
+      <p class="page-sub">Manage the films currently on your slate.</p>
+      <div class="panel">
+        <h2>Add a movie</h2>
+        <form id="movieForm">
+          <div class="form-grid">
+            <div class="field"><label for="mTitle">Title</label><input id="mTitle" required placeholder="e.g. Nightfall Harbor"></div>
+            <div class="field"><label for="mGenre">Genre</label><input id="mGenre" required placeholder="e.g. Thriller"></div>
+            <div class="field"><label for="mDuration">Duration (minutes)</label><input id="mDuration" type="number" min="1" required placeholder="118"></div>
+            <div class="field"><label for="mRating">Rating</label>
+              <select id="mRating">
+                <option>G</option><option>PG</option><option selected>PG-13</option><option>R</option><option>NC-17</option>
+              </select>
+            </div>
+            <div class="field full"><label for="mSynopsis">Synopsis (optional)</label><textarea id="mSynopsis" placeholder="One or two lines about the film"></textarea></div>
+          </div>
+          <button class="btn btn-gold" type="submit">Add movie</button>
+        </form>
+      </div>
+      <div class="movie-list" id="movieList"></div>
+    </section>
+
+    <!-- SHOWTIMES -->
+    <section class="page" id="page-showtimes">
+      <h1 class="page-title">Showtimes</h1>
+      <p class="page-sub">Schedule when and where each film plays.</p>
+      <div class="panel">
+        <h2>Schedule a showtime</h2>
+        <form id="showtimeForm">
+          <div class="form-grid">
+            <div class="field"><label for="sMovie">Movie</label><select id="sMovie" required></select></div>
+            <div class="field"><label for="sScreen">Screen</label>
+              <select id="sScreen">
+                <option>Screen 1</option><option>Screen 2</option><option>Screen 3</option><option>Screen 4</option>
+              </select>
+            </div>
+            <div class="field"><label for="sDate">Date</label><input id="sDate" type="date" required></div>
+            <div class="field"><label for="sTime">Time</label><input id="sTime" type="time" required></div>
+            <div class="field"><label for="sPrice">Ticket price ($)</label><input id="sPrice" type="number" min="1" step="0.5" value="12" required></div>
+          </div>
+          <button class="btn btn-gold" type="submit">Add showtime</button>
+        </form>
+      </div>
+      <div class="show-list" id="showList"></div>
+    </section>
+
+    <!-- BOOK TICKETS -->
+    <section class="page" id="page-book">
+      <h1 class="page-title">Book Tickets</h1>
+      <p class="page-sub">Pick a showtime, choose seats, confirm the booking.</p>
+      <div class="book-wrap">
+        <div>
+          <div class="panel">
+            <h2>1. Choose a showtime</h2>
+            <div class="showtime-pick" id="showtimePick"></div>
+          </div>
+        </div>
+        <div class="panel" id="bookingArea">
+          <div class="empty" id="bookingEmpty">
+            <div class="em-icon">🎬</div>
+            Pick a showtime on the left to open the seat map.
+          </div>
+          <div id="bookingContent" style="display:none">
+            <h2 id="bookHeading">2. Pick seats</h2>
+            <div class="screen"></div>
+            <div class="seat-map" id="seatMap"></div>
+            <div class="legend">
+              <span><i class="lg-box" style="background:var(--surface-2);border:1px solid var(--line)"></i>Available</span>
+              <span><i class="lg-box" style="background:var(--gold)"></i>Selected</span>
+              <span><i class="lg-box" style="background:var(--red-dim)"></i>Taken</span>
+            </div>
+            <div class="book-summary">
+              <div class="form-grid" style="margin-top:0">
+                <div class="field"><label for="cName">Customer name</label><input id="cName" required placeholder="Full name"></div>
+                <div class="field"><label for="cPhone">Phone</label><input id="cPhone" required placeholder="555-0100"></div>
+              </div>
+              <div class="summary-row"><span>Seats selected</span><span id="sumSeats">—</span></div>
+              <div class="summary-row"><span>Price per ticket</span><span id="sumPrice">$0</span></div>
+              <div class="summary-row summary-total"><span>Total</span><span id="sumTotal">$0</span></div>
+              <button class="btn btn-gold" id="confirmBookingBtn" style="margin-top:12px;width:100%">Confirm booking</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BOOKINGS -->
+    <section class="page" id="page-bookings">
+      <h1 class="page-title">Bookings</h1>
+      <p class="page-sub">Every reservation made, confirmed or cancelled.</p>
+      <div class="toolbar">
+        <input class="search" id="bookingSearch" placeholder="Search by name, phone or movie...">
+      </div>
+      <div class="table-wrap">
+        <table id="bookingsTable">
+          <thead>
+            <tr><th>Movie</th><th>Showtime</th><th>Customer</th><th>Seats</th><th>Total</th><th>Status</th><th></th></tr>
+          </thead>
+          <tbody id="bookingsBody"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="bookingsEmpty" style="display:none">
+        <div class="em-icon">🎟️</div>No bookings yet.
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------- State & persistence ---------------- */
+  var STORE_KEY = "marquee_mgr_v1";
+  var state = load() || seedState();
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  function save() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* storage unavailable */ }
+  }
+  function uid() { return Math.random().toString(36).slice(2, 10); }
+
+  function seedState() {
+    var m1 = uid(), m2 = uid(), m3 = uid();
+    var today = new Date();
+    function iso(offsetDays) {
+      var d = new Date(today);
+      d.setDate(d.getDate() + offsetDays);
+      return d.toISOString().slice(0, 10);
+    }
+    var s1 = uid(), s2 = uid(), s3 = uid();
+    return {
+      movies: [
+        { id: m1, title: "Nightfall Harbor", genre: "Thriller", duration: 118, rating: "PG-13", synopsis: "A harbor town keeps a secret the tide won't cover.", color: "#3a4a6b", emoji: "🌊" },
+        { id: m2, title: "Paper Constellations", genre: "Animation", duration: 96, rating: "PG", synopsis: "A folded-paper world where stars are made by hand.", color: "#6b3a5e", emoji: "✦" },
+        { id: m3, title: "The Long Road Out", genre: "Drama", duration: 131, rating: "R", synopsis: "Two brothers, one truck, and a state they can't cross fast enough.", color: "#5e4a2f", emoji: "🛣" }
+      ],
+      showtimes: [
+        { id: s1, movieId: m1, screen: "Screen 1", date: iso(0), time: "19:30", price: 13.5, taken: ["C4", "C5", "D6"] },
+        { id: s2, movieId: m2, screen: "Screen 2", date: iso(0), time: "17:00", price: 10, taken: ["A1", "A2"] },
+        { id: s3, movieId: m3, screen: "Screen 3", date: iso(1), time: "20:15", price: 14, taken: [] }
+      ],
+      bookings: []
+    };
+  }
+
+  /* ---------------- Navigation ---------------- */
+  var navButtons = document.querySelectorAll(".nav-btn");
+  navButtons.forEach(function (btn) {
+    btn.addEventListener("click", function () { goTo(btn.dataset.page); });
+  });
+  function goTo(page) {
+    document.querySelectorAll(".page").forEach(function (p) { p.classList.remove("active"); });
+    document.getElementById("page-" + page).classList.add("active");
+    navButtons.forEach(function (b) { b.classList.toggle("active", b.dataset.page === page); });
+    if (page === "dashboard") renderDashboard();
+    if (page === "movies") renderMovies();
+    if (page === "showtimes") renderShowtimes();
+    if (page === "book") renderBookPage();
+    if (page === "bookings") renderBookings();
+  }
+
+  /* ---------------- Theme ---------------- */
+  document.getElementById("themeToggle").addEventListener("click", function () {
+    var root = document.documentElement;
+    var current = root.getAttribute("data-theme");
+    root.setAttribute("data-theme", current === "dark" ? "light" : "dark");
+  });
+
+  /* ---------------- Toast ---------------- */
+  var toastTimer = null;
+  function toast(msg) {
+    var t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2200);
+  }
+
+  /* ---------------- Helpers ---------------- */
+  function movieById(id) { return state.movies.filter(function (m) { return m.id === id; })[0]; }
+  function showtimeById(id) { return state.showtimes.filter(function (s) { return s.id === id; })[0]; }
+  function fmtDate(iso) {
+    var d = new Date(iso + "T00:00:00");
+    return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  }
+  function fmtTime(t) {
+    var parts = t.split(":"); var h = parseInt(parts[0], 10); var m = parts[1];
+    var ampm = h >= 12 ? "PM" : "AM"; var h12 = h % 12 || 12;
+    return h12 + ":" + m + " " + ampm;
+  }
+  function money(n) { return "$" + Number(n).toFixed(2).replace(/\.00$/, ""); }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  var PALETTE = ["#3a4a6b", "#6b3a5e", "#5e4a2f", "#3a6b52", "#6b3a3a", "#3a5f6b"];
+  var EMOJI = ["🎬", "🌊", "✦", "🛣", "🔥", "🌙", "🦋", "⚡", "🗝", "🌵"];
+
+  /* ================= DASHBOARD ================= */
+  function renderDashboard() {
+    document.getElementById("statMovies").textContent = state.movies.length;
+    document.getElementById("statShowtimes").textContent = state.showtimes.length;
+    var confirmed = state.bookings.filter(function (b) { return b.status === "confirmed"; });
+    var seatsBooked = confirmed.reduce(function (sum, b) { return sum + b.seats.length; }, 0);
+    var revenue = confirmed.reduce(function (sum, b) { return sum + b.total; }, 0);
+    document.getElementById("statSeats").textContent = seatsBooked;
+    document.getElementById("statRevenue").textContent = money(revenue);
+
+    var upcoming = state.showtimes.slice().sort(function (a, b) {
+      return (a.date + a.time).localeCompare(b.date + b.time);
+    }).slice(0, 5);
+    var wrap = document.getElementById("dashShowtimes");
+    wrap.innerHTML = upcoming.length ? upcoming.map(function (s) {
+      var mv = movieById(s.movieId);
+      return '<div class="row-item"><div><div>' + escapeHtml(mv ? mv.title : "Unknown") + '</div>' +
+        '<div class="mv">' + s.screen + ' · ' + fmtDate(s.date) + ' · ' + fmtTime(s.time) + '</div></div>' +
+        '<span class="tag">' + s.taken.length + ' seats taken</span></div>';
+    }).join("") : '<div class="empty" style="padding:20px"><div class="em-icon">📽️</div>No showtimes scheduled yet.</div>';
+
+    var recent = state.bookings.slice().reverse().slice(0, 5);
+    var bwrap = document.getElementById("dashBookings");
+    bwrap.innerHTML = recent.length ? recent.map(function (b) {
+      var s = showtimeById(b.showtimeId);
+      var mv = s ? movieById(s.movieId) : null;
+      return '<div class="row-item"><div><div>' + escapeHtml(b.name) + '</div>' +
+        '<div class="mv">' + escapeHtml(mv ? mv.title : "Unknown") + ' · ' + b.seats.join(", ") + '</div></div>' +
+        '<span class="status-pill status-' + b.status + '">' + b.status + '</span></div>';
+    }).join("") : '<div class="empty" style="padding:20px"><div class="em-icon">🎟️</div>No bookings yet.</div>';
+  }
+
+  /* ================= MOVIES ================= */
+  function renderMovies() {
+    var sel = document.getElementById("sMovie");
+    sel.innerHTML = state.movies.map(function (m) { return '<option value="' + m.id + '">' + escapeHtml(m.title) + '</option>'; }).join("");
+
+    var list = document.getElementById("movieList");
+    if (!state.movies.length) {
+      list.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="em-icon">🎞️</div>No movies yet. Add your first one above.</div>';
+      return;
+    }
+    list.innerHTML = state.movies.map(function (m) {
+      return '<div class="movie-card">' +
+        '<div class="poster" style="background:' + m.color + '">' + m.emoji + '</div>' +
+        '<div class="movie-body">' +
+        '<div class="movie-title">' + escapeHtml(m.title) + '</div>' +
+        '<div class="movie-meta">' + escapeHtml(m.genre) + ' · ' + m.duration + ' min · <span class="tag">' + m.rating + '</span></div>' +
+        '<div class="movie-actions"><button class="btn btn-ghost btn-sm" data-del-movie="' + m.id + '">Remove</button></div>' +
+        '</div></div>';
+    }).join("");
+
+    list.querySelectorAll("[data-del-movie]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-del-movie");
+        var hasShows = state.showtimes.some(function (s) { return s.movieId === id; });
+        if (hasShows && !confirm("This movie has showtimes scheduled. Remove it and its showtimes?")) return;
+        state.movies = state.movies.filter(function (m) { return m.id !== id; });
+        state.showtimes = state.showtimes.filter(function (s) { return s.movieId !== id; });
+        save(); renderMovies(); renderShowtimes();
+        toast("Movie removed.");
+      });
+    });
+  }
+
+  document.getElementById("movieForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var title = document.getElementById("mTitle").value.trim();
+    var genre = document.getElementById("mGenre").value.trim();
+    var duration = parseInt(document.getElementById("mDuration").value, 10);
+    var rating = document.getElementById("mRating").value;
+    var synopsis = document.getElementById("mSynopsis").value.trim();
+    if (!title || !genre || !duration) return;
+    state.movies.push({
+      id: uid(), title: title, genre: genre, duration: duration, rating: rating, synopsis: synopsis,
+      color: PALETTE[state.movies.length % PALETTE.length],
+      emoji: EMOJI[state.movies.length % EMOJI.length]
+    });
+    save();
+    e.target.reset();
+    document.getElementById("mRating").value = "PG-13";
+    renderMovies();
+    toast("Movie added.");
+  });
+
+  /* ================= SHOWTIMES ================= */
+  function renderShowtimes() {
+    var list = document.getElementById("showList");
+    if (!state.movies.length) {
+      list.innerHTML = '<div class="empty"><div class="em-icon">🎬</div>Add a movie first, then schedule its showtimes.</div>';
+      return;
+    }
+    if (!state.showtimes.length) {
+      list.innerHTML = '<div class="empty"><div class="em-icon">🗓️</div>No showtimes scheduled yet.</div>';
+      return;
+    }
+    var sorted = state.showtimes.slice().sort(function (a, b) { return (a.date + a.time).localeCompare(b.date + b.time); });
+    list.innerHTML = sorted.map(function (s) {
+      var mv = movieById(s.movieId);
+      var total = 40; // seats: 4 rows x 10
+      var pct = Math.min(100, Math.round((s.taken.length / total) * 100));
+      return '<div class="show-card">' +
+        '<div class="show-info"><div class="show-swatch" style="background:' + (mv ? mv.color : "#888") + '"></div>' +
+        '<div><div class="show-title">' + escapeHtml(mv ? mv.title : "Unknown movie") + '</div>' +
+        '<div class="show-sub">' + s.screen + ' · ' + fmtDate(s.date) + ' · ' + fmtTime(s.time) + ' · ' + money(s.price) + '/ticket</div></div></div>' +
+        '<div style="display:flex;align-items:center;gap:12px">' +
+        '<div><div class="occ-bar"><div class="occ-fill" style="width:' + pct + '%"></div></div>' +
+        '<div class="show-sub" style="margin-top:4px">' + s.taken.length + '/' + total + ' seats</div></div>' +
+        '<button class="btn btn-ghost btn-sm" data-del-show="' + s.id + '">Remove</button></div>' +
+        '</div>';
+    }).join("");
+
+    list.querySelectorAll("[data-del-show]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-del-show");
+        state.showtimes = state.showtimes.filter(function (s) { return s.id !== id; });
+        save(); renderShowtimes();
+        toast("Showtime removed.");
+      });
+    });
+  }
+
+  document.getElementById("showtimeForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var movieId = document.getElementById("sMovie").value;
+    var screen = document.getElementById("sScreen").value;
+    var date = document.getElementById("sDate").value;
+    var time = document.getElementById("sTime").value;
+    var price = parseFloat(document.getElementById("sPrice").value);
+    if (!movieId || !date || !time || !price) return;
+    state.showtimes.push({ id: uid(), movieId: movieId, screen: screen, date: date, time: time, price: price, taken: [] });
+    save();
+    e.target.reset();
+    document.getElementById("sPrice").value = 12;
+    renderShowtimes();
+    toast("Showtime scheduled.");
+  });
+
+  /* ================= BOOK TICKETS ================= */
+  var selectedShowtimeId = null;
+  var selectedSeats = [];
+  var ROWS = ["A", "B", "C", "D"];
+  var SEATS_PER_ROW = 10;
+
+  function renderBookPage() {
+    var pick = document.getElementById("showtimePick");
+    var sorted = state.showtimes.slice().sort(function (a, b) { return (a.date + a.time).localeCompare(b.date + b.time); });
+    if (!sorted.length) {
+      pick.innerHTML = '<div class="empty" style="padding:20px"><div class="em-icon">🗓️</div>Schedule a showtime first.</div>';
+      return;
+    }
+    pick.innerHTML = sorted.map(function (s) {
+      var mv = movieById(s.movieId);
+      var selCls = s.id === selectedShowtimeId ? " sel" : "";
+      return '<button class="st-opt' + selCls + '" data-pick="' + s.id + '">' +
+        '<div class="t1">' + escapeHtml(mv ? mv.title : "Unknown") + '</div>' +
+        '<div class="t2">' + s.screen + ' · ' + fmtDate(s.date) + ' · ' + fmtTime(s.time) + ' · ' + money(s.price) + '</div></button>';
+    }).join("");
+    pick.querySelectorAll("[data-pick]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        selectedShowtimeId = btn.getAttribute("data-pick");
+        selectedSeats = [];
+        renderBookPage();
+        renderSeatMap();
+      });
+    });
+
+    var empty = document.getElementById("bookingEmpty");
+    var content = document.getElementById("bookingContent");
+    if (selectedShowtimeId && showtimeById(selectedShowtimeId)) {
+      empty.style.display = "none";
+      content.style.display = "block";
+      renderSeatMap();
+    } else {
+      empty.style.display = "block";
+      content.style.display = "none";
+    }
+  }
+
+  function renderSeatMap() {
+    var s = showtimeById(selectedShowtimeId);
+    if (!s) return;
+    var mv = movieById(s.movieId);
+    document.getElementById("bookHeading").textContent = "2. Pick seats — " + (mv ? mv.title : "");
+    var map = document.getElementById("seatMap");
+    map.innerHTML = ROWS.map(function (row) {
+      var seats = "";
+      for (var i = 1; i <= SEATS_PER_ROW; i++) {
+        var seatId = row + i;
+        var isTaken = s.taken.indexOf(seatId) !== -1;
+        var isSel = selectedSeats.indexOf(seatId) !== -1;
+        var cls = "seat" + (isTaken ? " taken" : "") + (isSel ? " sel" : "");
+        seats += '<div class="' + cls + '" data-seat="' + seatId + '">' + i + '</div>';
+      }
+      return '<div class="seat-row"><span class="row-label">' + row + '</span>' + seats + '</div>';
+    }).join("");
+    map.querySelectorAll(".seat:not(.taken)").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var id = el.getAttribute("data-seat");
+        var idx = selectedSeats.indexOf(id);
+        if (idx === -1) selectedSeats.push(id); else selectedSeats.splice(idx, 1);
+        renderSeatMap();
+        updateSummary();
+      });
+    });
+    updateSummary();
+  }
+
+  function updateSummary() {
+    var s = showtimeById(selectedShowtimeId);
+    if (!s) return;
+    document.getElementById("sumSeats").textContent = selectedSeats.length ? selectedSeats.slice().sort().join(", ") : "—";
+    document.getElementById("sumPrice").textContent = money(s.price);
+    document.getElementById("sumTotal").textContent = money(s.price * selectedSeats.length);
+  }
+
+  document.getElementById("confirmBookingBtn").addEventListener("click", function () {
+    var s = showtimeById(selectedShowtimeId);
+    if (!s) return;
+    var name = document.getElementById("cName").value.trim();
+    var phone = document.getElementById("cPhone").value.trim();
+    if (!name || !phone) { toast("Add the customer's name and phone."); return; }
+    if (!selectedSeats.length) { toast("Select at least one seat."); return; }
+    var booking = {
+      id: uid(), showtimeId: s.id, name: name, phone: phone,
+      seats: selectedSeats.slice(), total: s.price * selectedSeats.length,
+      status: "confirmed", createdAt: new Date().toISOString()
+    };
+    state.bookings.push(booking);
+    s.taken = s.taken.concat(selectedSeats);
+    save();
+    selectedSeats = [];
+    document.getElementById("cName").value = "";
+    document.getElementById("cPhone").value = "";
+    renderSeatMap();
+    toast("Booking confirmed for " + name + ".");
+  });
+
+  /* ================= BOOKINGS ================= */
+  function renderBookings(filterText) {
+    var body = document.getElementById("bookingsBody");
+    var emptyEl = document.getElementById("bookingsEmpty");
+    var table = document.getElementById("bookingsTable");
+    var list = state.bookings.slice().reverse();
+    if (filterText) {
+      var f = filterText.toLowerCase();
+      list = list.filter(function (b) {
+        var s = showtimeById(b.showtimeId);
+        var mv = s ? movieById(s.movieId) : null;
+        return b.name.toLowerCase().indexOf(f) !== -1 ||
+          b.phone.toLowerCase().indexOf(f) !== -1 ||
+          (mv && mv.title.toLowerCase().indexOf(f) !== -1);
+      });
+    }
+    if (!list.length) {
+      table.style.display = "none";
+      emptyEl.style.display = "block";
+      return;
+    }
+    table.style.display = "table";
+    emptyEl.style.display = "none";
+    body.innerHTML = list.map(function (b) {
+      var s = showtimeById(b.showtimeId);
+      var mv = s ? movieById(s.movieId) : null;
+      var cancelBtn = b.status === "confirmed"
+        ? '<button class="btn btn-ghost btn-sm" data-cancel="' + b.id + '">Cancel</button>'
+        : '';
+      return '<tr>' +
+        '<td>' + escapeHtml(mv ? mv.title : "Unknown") + '</td>' +
+        '<td>' + (s ? fmtDate(s.date) + ' ' + fmtTime(s.time) : "—") + '</td>' +
+        '<td>' + escapeHtml(b.name) + '<br><span class="mv" style="color:var(--muted);font-size:11.5px">' + escapeHtml(b.phone) + '</span></td>' +
+        '<td>' + b.seats.join(", ") + '</td>' +
+        '<td>' + money(b.total) + '</td>' +
+        '<td><span class="status-pill status-' + b.status + '">' + b.status + '</span></td>' +
+        '<td>' + cancelBtn + '</td>' +
+        '</tr>';
+    }).join("");
+    body.querySelectorAll("[data-cancel]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-cancel");
+        var b = state.bookings.filter(function (x) { return x.id === id; })[0];
+        if (!b) return;
+        var s = showtimeById(b.showtimeId);
+        if (s) s.taken = s.taken.filter(function (seat) { return b.seats.indexOf(seat) === -1; });
+        b.status = "cancelled";
+        save();
+        renderBookings(document.getElementById("bookingSearch").value);
+        toast("Booking cancelled.");
+      });
+    });
+  }
+  document.getElementById("bookingSearch").addEventListener("input", function (e) {
+    renderBookings(e.target.value);
+  });
+
+  /* ---------------- Init ---------------- */
+  function init() {
+    var todayInput = document.getElementById("sDate");
+    todayInput.min = new Date().toISOString().slice(0, 10);
+    save();
+    renderDashboard();
+    renderMovies();
+    renderShowtimes();
+    renderBookPage();
+    renderBookings();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
